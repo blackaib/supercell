@@ -16,10 +16,11 @@ import struct
 import sys
 import os
 import subprocess
-import io
 import time
 import numpy as np
 import logging
+import cv2
+from Environment import Environment
 
 from threading import Thread
 from queue import Queue, Empty
@@ -112,6 +113,7 @@ class SCRCPY_client():
 
         frm = np.frombuffer(frm, dtype=np.ubyte)
         frm = frm.reshape((self.HEIGHT, self.WIDTH, 3))
+        frm = cv2.resize(frm, dsize=(Environment.HEIGHT, Environment.WIDTH))
         return frm
         # PIL.Image.fromarray(np.uint8(rgb_img*255))
 
@@ -142,7 +144,7 @@ class SCRCPY_client():
         self.WIDTH, self.HEIGHT = struct.unpack(">HH", res)
         logger.info("WxH: "+str(self.WIDTH)+"x"+str(self.HEIGHT))
 
-        self.bytes_to_read = self.WIDTH * self.HEIGHT * 3
+        self.bytes_to_read = self.WIDTH * self.HEIGHT * 3  #600x336
 
         return True
 
@@ -200,6 +202,15 @@ class SCRCPY_client():
         self.ffinthrd.join()
         self.ffoutthrd.join()
 
+    def send_action(self, coordinate):
+        if len(coordinate) == 2:
+            subprocess.Popen([ADB_bin, 'shell', 'input', 'tap',
+                              str(coordinate[0]), str(coordinate[1])], cwd=cwd).wait()
+        else:
+            subprocess.Popen([ADB_bin, 'shell', 'input', 'swipe',
+                              str(coordinate[0]), str(coordinate[1]),
+                              str(coordinate[2]), str(coordinate[3]), str(300)], cwd=cwd).wait()
+
 
 def connect_and_forward_scrcpy():
     try:
@@ -255,14 +266,13 @@ if __name__ == "__main__":
     SCRCPY.connect
     SCRCPY.start_processing()
 
-    import cv2
     try:
         while True:
-            frm = SCRCPY.get_next_frame(most_recent=True)
+            frm = SCRCPY.get_next_frame(most_recent=True)  # (336,600,3)
             if isinstance(frm, (np.ndarray, np.generic)):
                 frm = cv2.cvtColor(frm, cv2.COLOR_RGB2BGR)
                 cv2.imshow("image", frm)
-                cv2.waitKey(1000//60)  # CAP 60FPS
+                cv2.waitKey(1000//30)  # CAP 60FPS
     except KeyboardInterrupt:
         from IPython import embed
         embed()
