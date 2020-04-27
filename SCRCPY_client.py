@@ -126,7 +126,7 @@ class SCRCPY_client():
         DUMMYBYTE = self.sock.recv(1)
         #fd.write(DUMMYBYTE)
         if not len(DUMMYBYTE):
-            raise ConnectionError("Did not recieve Dummy Byte!")
+            raise ConnectionError("Did not receive Dummy Byte!")
         else:
             logger.info("Connected!")
 
@@ -136,7 +136,7 @@ class SCRCPY_client():
         self.deviceName = devname.decode("utf-8")
 
         if not len(self.deviceName):
-            raise ConnectionError("Did not recieve Device Name!")
+            raise ConnectionError("Did not receive Device Name!")
         logger.info("Device Name: "+self.deviceName)
 
         res = self.sock.recv(4)
